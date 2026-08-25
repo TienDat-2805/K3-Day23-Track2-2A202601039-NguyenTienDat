@@ -1,0 +1,22 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-8.3.4, pluggy-1.6.0 -- /home/tiendat04/Code/AI20K/K3-Day23-Track2-2A202601039-NguyenTienDat/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/tiendat04/Code/AI20K/K3-Day23-Track2-2A202601039-NguyenTienDat
+plugins: anyio-4.14.2
+collecting ... collected 13 items
+
+tests/test_failover.py::test_rpo_dem_dung_so_doc_bi_mat PASSED           [  7%]
+tests/test_failover.py::test_health_checker_can_threshold_lien_tiep PASSED [ 15%]
+tests/test_failover.py::test_failover_khong_cutover_khi_target_chua_ready PASSED [ 23%]
+tests/test_rto_evidence.py::test_drill1_ton_tai_va_khong_phuc_hoi PASSED [ 30%]
+tests/test_rto_evidence.py::test_drill2_hop_le PASSED                    [ 38%]
+tests/test_rto_evidence.py::test_rto_do_duoc_bang_timestamp PASSED       [ 46%]
+tests/test_rto_evidence.py::test_health_check_interval_duoc_ghi_lai PASSED [ 53%]
+tests/test_rto_evidence.py::test_rpo_duoc_do_chu_khong_uoc_luong PASSED  [ 61%]
+tests/test_rto_evidence.py::test_evidence_table_tro_vao_file_that PASSED [ 69%]
+tests/test_rto_evidence.py::test_chaos_khong_giet_ca_hai_region PASSED   [ 76%]
+tests/test_rto_evidence.py::test_evidence_table_da_dien_that PASSED      [ 84%]
+tests/test_rto_evidence.py::test_so_trong_bang_khop_voi_so_trong_log PASSED [ 92%]
+tests/test_rto_evidence.py::test_postmortem_co_gap_analysis PASSED       [100%]
+
+============================== 13 passed in 1.32s ==============================

@@ -1,17 +1,21 @@
-# Runbook 1 trang — Region chính down (TEMPLATE, sinh viên điền)
+# Runbook — Region chính down
 
-Runbook phải chạy được lúc 3h sáng bởi người KHÔNG viết nó. Mỗi bước: lệnh copy-paste
-được + cách biết bước đó xong.
+Phạm vi: bare mode local, primary A, standby B. Incident Commander (IC) duyệt failover/failback; on-call không sửa `edge/active_region` bằng tay.
 
-| # | Bước | Lệnh | Biết là xong khi | Ai làm |
+| # | Bước | Lệnh copy-paste | Biết là xong khi | Owner |
 |---|---|---|---|---|
-| 1 | Xác nhận outage | `python chaos/kill_region.py status` | `a.alive=false` 3 lần liên tiếp | on-call |
-| 2 | Mở incident + bấm giờ RTO | | ts ghi vào `reports/runbook-run.jsonl` | on-call |
-| 3 | Restore state ở region phụ | `python state/snapshot.py get --region b --backend fs` | | |
-| 4 | Scale pool warm→full | | `/readyz` của b trả 200 | |
-| 5 | DNS/LB cutover | | `curl localhost:8080/edge/state` cho `active_region=b` | |
-| 6 | Verify golden signals | | p95 < ___ms, error rate < ___ | |
-| 7 | Đo RTO + postmortem | `python tools/measure_rto.py --loadgen reports/drill-2-withdr.jsonl` | `rto_verdict` != null | |
+| 1 | Xác nhận outage | `python3 chaos/kill_region.py status --backend bare` | A không ready qua 3 probe; B còn alive | SRE on-call |
+| 2 | Mở incident, bấm giờ | `python3 dr/runbook.py --primary a --target b --backend fs` | Trả lời `y`; log có `thong_bao_incident` | SRE + IC |
+| 3 | Restore và scale | Runbook bước 2 tự gọi failover đúng một lần; CI dùng `python3 dr/runbook.py --primary a --target b --backend fs --auto` | Failover log có bước 1→3, RPO và model version | ML Platform |
+| 4 | Chờ readiness | `curl -sf localhost:8002/readyz` | HTTP 200, `ready:true`, vectors > 0, pool `full` | ML Platform |
+| 5 | Xác minh cutover | `curl -s localhost:8080/edge/state` | Sau `4_wait_ready` có `5_dns_cutover`; active region là B | SRE |
+| 6 | Golden signals | `for i in $(seq 1 10); do curl -sf localhost:8002/v1/infer; done` | 10/10 HTTP 200 từ B; error 0%; p95 < 100ms | SRE + ML Platform |
+| 7 | Đo và postmortem | `python3 tools/measure_rto.py --loadgen reports/drill-2-withdr.jsonl --target-rto 300` | `valid:true`, `warnings:[]`, `PASS`, RPO không null | IC |
 
-**Rollback (failover ngược):** điều kiện nào thì trả traffic về region A? Ai quyết định?
-(§4 Anti-Patterns: full-auto không có circuit breaker → 2 region flap qua lại.)
+## Stop conditions và rollback
+
+- Dừng, không cutover nếu snapshot thiếu, model version sai, B không ready trong 60s hoặc golden signals lỗi trước cutover.
+- Nếu đã cutover mà error rate B > 1% hoặc p95 > 500ms liên tục 5 phút, IC đánh giá rollback.
+- Chỉ IC phê duyệt failback; A phải ready ba lần, state đã reconcile và không còn ingest conflict.
+- Failback bằng quy trình an toàn: `python3 dr/runbook.py --primary b --target a --backend fs`; sau đó chạy lại golden signals.
+- Cooldown tối thiểu 15 phút để tránh hai region flap qua lại.
